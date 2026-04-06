@@ -20,7 +20,7 @@ fun AddGoalScreen(
     val parentEntry = remember(navController) {
         navController.getBackStackEntry(Routes.Goals.route)
     }
-    val viewModel: GoalsViewModel = hiltViewModel(parentEntry)
+    val viewModel: GoalViewModel = hiltViewModel(parentEntry)
 
     var name by remember { mutableStateOf("") }
     var target by remember { mutableStateOf("") }

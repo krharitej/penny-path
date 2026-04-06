@@ -1,6 +1,10 @@
 package com.haritejkr.pennypath.ui.screens.dashboard
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,24 +14,30 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.haritejkr.pennypath.ui.components.GlassCard
 import com.haritejkr.pennypath.ui.components.PieChart
 import com.haritejkr.pennypath.ui.components.WeeklyLineChart
+import com.haritejkr.pennypath.ui.navigation.Routes
 
 @Composable
-fun HomeScreenDashboard() {
+fun HomeScreenDashboard(navController: NavHostController) {
 
     val viewModel: DashboardViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
     val weeklyData by viewModel.weeklySpending.collectAsState(initial = emptyList())
+    val goals by viewModel.topGoals.collectAsState(initial = emptyList())
 
     Column(
         modifier = Modifier
@@ -138,6 +148,98 @@ fun HomeScreenDashboard() {
                         text = "₹${animatedSavings.toInt()}",
                         color = Color(0xFFFF9800)
                     )
+                }
+            }
+        }
+
+        var pressed by remember { mutableStateOf(false) }
+
+        val scale by animateFloatAsState(
+            targetValue = if (pressed) 0.97f else 1f,
+            label = ""
+        )
+
+        GlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            pressed = true
+                            tryAwaitRelease()
+                            pressed = false
+                        },
+                        onTap = {
+                            navController.navigate(Routes.Goals.route)
+                        }
+                    )
+                }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                Text(
+                    text = "Goals Progress 🎯",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                if (goals.isEmpty()) {
+                    Text(
+                        text = "No goals yet. Start saving 🚀",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                goals.forEach { goal ->
+
+                    val progress =
+                        (goal.savedAmount / goal.targetAmount)
+                            .toFloat()
+                            .coerceIn(0f, 1f)
+
+                    Column {
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(goal.name)
+                            Text("${(progress * 100).toInt()}%")
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        var startAnimation by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(Unit) {
+                            startAnimation = true
+                        }
+
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = if (startAnimation) progress else 0f,
+                            animationSpec = tween(
+                                durationMillis = 1000,
+                                easing = FastOutSlowInEasing
+                            ),
+                            label = ""
+                        )
+
+                        LinearProgressIndicator(
+                            progress = animatedProgress,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "₹${goal.savedAmount.toInt()} / ₹${goal.targetAmount.toInt()}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            AppDrawer()
+            PennyPathTheme { AppDrawer() }
         }
     }
 }

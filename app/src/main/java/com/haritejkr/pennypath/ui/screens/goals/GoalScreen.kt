@@ -1,6 +1,5 @@
 package com.haritejkr.pennypath.ui.screens.goals
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,20 +11,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.haritejkr.pennypath.ui.components.GlassCard
-import com.haritejkr.pennypath.ui.navigation.Routes
+import com.haritejkr.pennypath.model.Goal
 
-@SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun GoalScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: GoalViewModel = hiltViewModel()
 ) {
 
-    val parentEntry = remember(navController) {
-        navController.getBackStackEntry(Routes.Goals.route)
-    }
-    val viewModel: GoalsViewModel = hiltViewModel(parentEntry)
-
-    val state by viewModel.state.collectAsState()
+    //  FIX: collect goals directly
+    val goals by viewModel.goals.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -37,21 +32,28 @@ fun GoalScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            if (state.goals.isEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (goals.isEmpty()) {
                 Text("No goals yet. Start saving 🚀")
             }
 
-            state.goals.forEach { goal ->
+            goals.forEach { goal ->
 
                 var showAddDialog by remember { mutableStateOf(false) }
 
                 val progress =
-                    (goal.savedAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f)
+                    (goal.savedAmount / goal.targetAmount)
+                        .toFloat()
+                        .coerceIn(0f, 1f)
 
                 GlassCard {
                     Column {
 
-                        Text(goal.name, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = goal.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
                         Spacer(Modifier.height(8.dp))
 
@@ -84,7 +86,7 @@ fun GoalScreen(
                             }
 
                             OutlinedButton(
-                                onClick = { viewModel.removeGoal(goal.id) },
+                                onClick = { viewModel.removeGoal(goal) }, //  FIX
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Delete")
@@ -93,6 +95,7 @@ fun GoalScreen(
                     }
                 }
 
+                //  Add money dialog
                 if (showAddDialog) {
 
                     var amount by remember { mutableStateOf("") }
@@ -102,7 +105,7 @@ fun GoalScreen(
                         confirmButton = {
                             Button(onClick = {
                                 viewModel.addMoney(
-                                    goal.id,
+                                    goal,
                                     amount.toDoubleOrNull() ?: 0.0
                                 )
                                 showAddDialog = false
@@ -128,6 +131,7 @@ fun GoalScreen(
             }
         }
 
+        //  FAB
         FloatingActionButton(
             onClick = { navController.navigate("add_goal") },
             modifier = Modifier

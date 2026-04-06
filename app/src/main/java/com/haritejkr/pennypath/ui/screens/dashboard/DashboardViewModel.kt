@@ -10,13 +10,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import javax.inject.Inject
+import com.haritejkr.pennypath.repository.GoalRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val getTransactions: GetTransactions
+    private val getTransactions: GetTransactions,
+    private val goalRepository: GoalRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(DashboardState())
     val state: StateFlow<DashboardState> = _state
+    val goals = goalRepository.getGoals()
+    val topGoals = goalRepository.getGoals().map { list ->
+        list.sortedByDescending {
+            it.savedAmount / it.targetAmount
+        }.take(3)
+    }
 
     init {
         viewModelScope.launch {

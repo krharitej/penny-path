@@ -2,6 +2,7 @@ package com.haritejkr.pennypath.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,8 @@ fun GlassCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
+
+    val isDark = isSystemInDarkTheme()   //  IMPORTANT
 
     var visible by remember { mutableStateOf(false) }
 
@@ -54,14 +57,49 @@ fun GlassCard(
         label = ""
     )
 
-    val brush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.95f),
-            Color.White.copy(alpha = 0.7f),
-            Color.White.copy(alpha = 0.95f)
-        ),
-        start = Offset(shift, shift),
-        end = Offset(shift + 300f, shift + 300f)
+    //  FIXED GRADIENT (DARK MODE SAFE)
+    val brush = if (isDark) {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFF2A2A2A),
+                Color(0xFF3D3D3D),
+                Color(0xFF2A2A2A)
+            ),
+            start = Offset(shift, shift),
+            end = Offset(shift + 300f, shift + 300f)
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.9f),
+                Color(0xFFB4E9FF).copy(alpha = 0.3f),
+                Color.White.copy(alpha = 0.9f)
+            ),
+            start = Offset(shift, shift),
+            end = Offset(shift + 300f, shift + 300f)
+        )
+    }
+
+    //  FIXED CARD COLOR
+    val cardColor = if (isDark) {
+        Color(0xFF1E1E1E)   // dark solid
+    } else {
+        Color.White.copy(alpha = 0.85f)
+    }
+
+    val glowColor = if (isDark) {
+        Color(0xFF00E5FF)   // neon cyan
+    } else {
+        Color(0xFF42A5F5)   // soft blue
+    }
+
+    val glowAlpha by infinite.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Reverse
+        )
     )
 
     Card(
@@ -70,12 +108,16 @@ fun GlassCard(
                 scaleX = scale
                 scaleY = scale
             }
-            .shadow(elevation, RoundedCornerShape(28.dp)),
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(0.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.85f)
-        )
+            .shadow(0.dp, RoundedCornerShape(28.dp)) // remove default
+            .then(
+                Modifier
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(28.dp),
+                        ambientColor = glowColor.copy(alpha = glowAlpha),
+                        spotColor = glowColor.copy(alpha = glowAlpha + 0.2f)
+                    )
+            )
     ) {
 
         Box(

@@ -1,51 +1,56 @@
 package com.haritejkr.pennypath.ui.screens.goals
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.haritejkr.pennypath.model.Goal
+import com.haritejkr.pennypath.repository.GoalRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class GoalsViewModel @Inject constructor() : ViewModel() {
+class GoalViewModel @Inject constructor(
+    private val repository: GoalRepository
+) : ViewModel() {
 
-    private val _state = MutableStateFlow(GoalState())
-    val state: StateFlow<GoalState> = _state
+    //  Flow from DB
+    val goals = repository.getGoals()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
+    //  ADD GOAL
     fun addGoal(goal: Goal) {
-
-        val updatedGoals = _state.value.goals + goal
-
-        _state.value = _state.value.copy(
-            goals = updatedGoals,
-            totalSaved = updatedGoals.sumOf { it.savedAmount },
-            totalTarget = updatedGoals.sumOf { it.targetAmount }
-        )
-    }
-
-    fun removeGoal(goalId: Long) {
-        val updatedGoals = _state.value.goals.filterNot { it.id == goalId }
-
-        _state.value = _state.value.copy(
-            goals = updatedGoals,
-            totalSaved = updatedGoals.sumOf { it.savedAmount },
-            totalTarget = updatedGoals.sumOf { it.targetAmount }
-        )
-    }
-
-    fun addMoney(goalId: Long, amount: Double) {
-
-        val updatedGoals = _state.value.goals.map {
-            if (it.id == goalId) {
-                it.copy(savedAmount = it.savedAmount + amount)
-            } else it
+        viewModelScope.launch {
+            repository.addGoal(goal)
         }
+    }
 
-        _state.value = _state.value.copy(
-            goals = updatedGoals,
-            totalSaved = updatedGoals.sumOf { it.savedAmount },
-            totalTarget = updatedGoals.sumOf { it.targetAmount }
-        )
+    //  DELETE GOAL
+    fun removeGoal(goal: Goal) {
+        viewModelScope.launch {
+            repository.deleteGoal(goal)
+        }
+    }
+
+    //  UPDATE GOAL (generic)
+    fun updateGoal(goal: Goal) {
+        viewModelScope.launch {
+            repository.updateGoal(goal)
+        }
+    }
+
+    //  ADD MONEY (FIXED )
+    fun addMoney(goal: Goal, amount: Double) {
+        viewModelScope.launch {
+            val updatedGoal = goal.copy(
+                savedAmount = goal.savedAmount + amount
+            )
+            repository.updateGoal(updatedGoal)
+        }
     }
 }

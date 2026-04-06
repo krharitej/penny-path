@@ -1,14 +1,25 @@
 package com.haritejkr.pennypath.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.haritejkr.pennypath.model.Transaction
 import java.text.SimpleDateFormat
@@ -21,15 +32,16 @@ fun TransactionItem(
     isEditMode: Boolean,
     isSelected: Boolean,
     onSelect: (Boolean) -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
 
     val type = transaction.type.lowercase()
 
     val amountColor = when (type) {
-        "income" -> Color(0xFF2E7D32)
-        "expense" -> Color(0xFFC62828)
-        "savings" -> Color(0xFFFF9800)
+        "income" -> Color(0xFF00E676)   // neon green
+        "expense" -> Color(0xFFFF5252)  // neon red
+        "savings" -> Color(0xFFFFC107)  // amber glow
         else -> Color.Gray
     }
 
@@ -38,20 +50,54 @@ fun TransactionItem(
         else -> getCategoryIcon(transaction.category, type == "income")
     }
 
-    Card(
-        modifier = Modifier
+    // 🔥 ENTRY ANIMATION
+    var visible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(400),
+        label = ""
+    )
+
+    val offsetY by animateDpAsState(
+        targetValue = if (visible) 0.dp else 20.dp,
+        animationSpec = tween(400),
+        label = ""
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0.96f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy
+        ),
+        label = ""
+    )
+
+    // 💎 GLASS CARD
+    GlassCard(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .padding(vertical = 6.dp)
+            .graphicsLayer {
+                this.alpha = alpha
+                translationY = offsetY.toPx()
+                scaleX = scale
+                scaleY = scale
+            }
     ) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // Checkbox (only in delete mode)
+            // ✅ Checkbox
             if (isSelectionMode) {
                 Checkbox(
                     checked = isSelected,
@@ -60,11 +106,11 @@ fun TransactionItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Icon
+            // 💎 Icon with glow feel
             Surface(
                 shape = CircleShape,
-                color = amountColor.copy(alpha = 0.12f),
-                modifier = Modifier.size(40.dp)
+                color = amountColor.copy(alpha = 0.15f),
+                modifier = Modifier.size(42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -78,7 +124,7 @@ fun TransactionItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Middle Content
+            // 📄 Middle Content
             Column(modifier = Modifier.weight(1f)) {
 
                 Text(
@@ -87,21 +133,25 @@ fun TransactionItem(
                     style = MaterialTheme.typography.bodyLarge
                 )
 
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
                     text = formatDate(transaction.date),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Right Content
+            // 💰 Right Content
             Column(horizontalAlignment = Alignment.End) {
 
                 Text(
-                    text = "₹${transaction.amount}",
+                    text = "₹${transaction.amount.toInt()}",
                     color = amountColor,
                     style = MaterialTheme.typography.bodyLarge
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 AssistChip(
                     onClick = {},
@@ -116,11 +166,13 @@ fun TransactionItem(
                         )
                     },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = amountColor.copy(alpha = 0.1f),
+                        containerColor = amountColor.copy(alpha = 0.15f),
                         labelColor = amountColor
                     )
                 )
             }
+
+            // ✏️ Edit button
             if (isEditMode) {
                 IconButton(onClick = onEditClick) {
                     Icon(

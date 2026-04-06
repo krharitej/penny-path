@@ -29,7 +29,7 @@ fun AppNavGraph(navController: NavHostController,
     ) {
 
         composable(Routes.Dashboard.route) {
-            HomeScreenDashboard()
+            HomeScreenDashboard(navController = navController)
         }
 
         composable(Routes.Transactions.route) {

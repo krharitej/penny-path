@@ -156,7 +156,6 @@ Uses **StateFlow** for reactive UI updates.
 
 ## ⚠️ Known Limitations
 
-- Goals are stored in-memory (not persistent)
 - No cloud sync
 - Basic analytics in Insights
 
